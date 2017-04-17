@@ -3,7 +3,9 @@ define(["app/dom", "app/config", "app/api"], function($, config, api) {
     "use strict";
 
     var isso = null;
+    var requestedSDK = false;
     var loadedSDK = false;
+    var loginRequest = false;
     var loggedIn = false;
     var authorData = null;
     var gAuth = null;
@@ -15,7 +17,27 @@ define(["app/dom", "app/config", "app/api"], function($, config, api) {
 
         isso = isso_ref;
 
-        // Load Google API
+        var method = JSON.parse(localStorage.getItem("login_method"));
+        if (method == "google") {
+            loadSDK(false);
+        }
+    }
+
+    var loadSDK = function(activeClick) {
+        if (requestedSDK) {
+            if (activeClick) {
+                if (loadedSDK) {
+                    gAuth.signIn();
+                } else {
+                    loginRequest = true;
+                }
+            }
+            return;
+        }
+
+        requestedSDK = true;
+        loginRequest = activeClick;
+
         var gScriptEl = document.createElement("script");
         gScriptEl.src = "https://apis.google.com/js/platform.js";
         document.head.appendChild(gScriptEl);
@@ -27,10 +49,11 @@ define(["app/dom", "app/config", "app/api"], function($, config, api) {
                 });
                 gAuth.isSignedIn.listen(signedinChanged)
                 loadedSDK = true;
-                isso.updateAllPostboxes();
+                if (loginRequest) {
+                    gAuth.signIn();
+                }
             });
         });
-
     }
 
     var signedinChanged = function(signedin) {
@@ -45,27 +68,27 @@ define(["app/dom", "app/config", "app/api"], function($, config, api) {
                 pictureURL: profile.getImageUrl(),
                 idToken: user.getAuthResponse().id_token,
             };
+            localStorage.setItem("login_method", JSON.stringify("google"));
             isso.updateAllPostboxes();
         } else {
             loggedIn = false;
             authorData = null;
+            localStorage.removeItem("login_method");
             isso.updateAllPostboxes();
         }
     }
 
     var updatePostbox = function(el) {
-        if (loadedSDK) {
-            if (loggedIn) {
-                $(".auth-not-loggedin", el).hide();
-                $(".auth-loggedin-google", el).showInline();
-                $(".auth-google-name", el).innerHTML = authorData.name;
-                $(".isso-postbox .avatar", el).setAttribute("src", authorData.pictureURL);
-                $(".isso-postbox .avatar", el).show();
-            } else {
-                $(".auth-loggedin-google", el).hide();
-                $(".social-login-link-google", el).showInline();
-                $(".social-login-link-google > img", el).setAttribute("src", api.endpoint + "/images/googleplus-color.png");
-            }
+        if (loggedIn) {
+            $(".auth-not-loggedin", el).hide();
+            $(".auth-loggedin-google", el).showInline();
+            $(".auth-google-name", el).innerHTML = authorData.name;
+            $(".isso-postbox .avatar", el).setAttribute("src", authorData.pictureURL);
+            $(".isso-postbox .avatar", el).show();
+        } else {
+            $(".auth-loggedin-google", el).hide();
+            $(".social-login-link-google", el).showInline();
+            $(".social-login-link-google > img", el).setAttribute("src", api.endpoint + "/images/googleplus-color.png");
         }
     }
 
@@ -78,7 +101,7 @@ define(["app/dom", "app/config", "app/api"], function($, config, api) {
             gAuth.signOut();
         });
         $(".social-login-link-google", el).on("click", function() {
-            gAuth.signIn();
+            loadSDK(true);
         });
     }
 
