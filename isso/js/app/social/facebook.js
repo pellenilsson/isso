@@ -3,7 +3,9 @@ define(["app/dom", "app/config", "app/api"], function($, config, api) {
     "use strict";
 
     var isso = null;
+    var requestedSDK = false;
     var loadedSDK = false;
+    var loginRequest = false;
     var loggedIn = false;
     var authorData = null;
     var token = null;
@@ -18,12 +20,14 @@ define(["app/dom", "app/config", "app/api"], function($, config, api) {
                     name: response["name"],
                     email: response["email"] || "",
                 };
+                localStorage.setItem("login_method", JSON.stringify("facebook"));
                 isso.updateAllPostboxes();
             });
         } else {
             loggedIn = false;
             authorData = null;
             token = null;
+            localStorage.removeItem("login_method");
             isso.updateAllPostboxes();
         }
 
@@ -35,6 +39,29 @@ define(["app/dom", "app/config", "app/api"], function($, config, api) {
         }
 
         isso = isso_ref;
+
+        var method = JSON.parse(localStorage.getItem("login_method"));
+        if (method == "google") {
+            loadSDK(false);
+        }
+    }
+
+    var loadSDK = function(activeClick) {
+        if (requestedSDK) {
+            if (activeClick) {
+                if (loadedSDK) {
+                    FB.login(function(response) {
+                        statusChangeCallback(response);
+                    }, {scope: 'public_profile,email'});
+                } else {
+                    loginRequest = true;
+                }
+            }
+            return;
+        }
+
+        requestedSDK = true;
+        loginRequest = activeClick;
 
         // Called when Facebook SDK has loaded
         window.fbAsyncInit = function() {
@@ -50,6 +77,15 @@ define(["app/dom", "app/config", "app/api"], function($, config, api) {
             FB.getLoginStatus(function(response) {
                 statusChangeCallback(response);
             });
+            if (loginRequest) {
+                FB.login(function(response) {
+                    statusChangeCallback(response);
+                }, {scope: 'public_profile,email'});
+            } else {
+                FB.getLoginStatus(function(response) {
+                    statusChangeCallback(response);
+                });
+            }
         };
 
         // Load Facebook SDK
@@ -60,22 +96,19 @@ define(["app/dom", "app/config", "app/api"], function($, config, api) {
             js.src = "//connect.facebook.net/en_US/sdk.js";
             fjs.parentNode.insertBefore(js, fjs);
         }(document, "script", "facebook-jssdk"));
-
     }
 
     var updatePostbox = function(el) {
-        if (loadedSDK) {
-            if (loggedIn) {
-                $(".auth-not-loggedin", el).hide();
-                $(".auth-loggedin-facebook", el).showInline();
-                $(".auth-facebook-name", el).innerHTML = authorData.name;
-                $(".isso-postbox .avatar", el).setAttribute("src", "//graph.facebook.com/" + authorData.uid + "/picture");
-                $(".isso-postbox .avatar", el).show();
-            } else {
-                $(".auth-loggedin-facebook", el).hide();
-                $(".social-login-link-facebook", el).showInline();
-                $(".social-login-link-facebook > img", el).setAttribute("src", api.endpoint + "/images/facebook-color.png");
-            }
+        if (loggedIn) {
+            $(".auth-not-loggedin", el).hide();
+            $(".auth-loggedin-facebook", el).showInline();
+            $(".auth-facebook-name", el).innerHTML = authorData.name;
+            $(".isso-postbox .avatar", el).setAttribute("src", "//graph.facebook.com/" + authorData.uid + "/picture");
+            $(".isso-postbox .avatar", el).show();
+        } else {
+            $(".auth-loggedin-facebook", el).hide();
+            $(".social-login-link-facebook", el).showInline();
+            $(".social-login-link-facebook > img", el).setAttribute("src", api.endpoint + "/images/facebook-color.png");
         }
     }
 
@@ -90,9 +123,7 @@ define(["app/dom", "app/config", "app/api"], function($, config, api) {
             });
         });
         $(".social-login-link-facebook", el).on("click", function() {
-            FB.login(function(response) {
-                statusChangeCallback(response);
-            }, {scope: 'public_profile,email'});
+            loadSDK(true);
         });
     }
 
