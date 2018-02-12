@@ -1,10 +1,6 @@
 # -*- encoding: utf-8 -*-
 
-try:
-    import unittest2 as unittest
-except ImportError:
-    import unittest
-
+import unittest
 import textwrap
 
 from isso import config
@@ -68,7 +64,8 @@ class TestHTML(unittest.TestCase):
         sanitizer = html.Sanitizer(elements=[], attributes=[])
         examples = [
             ('Look: <img src="..." />', 'Look: '),
-            ('<a href="http://example.org/">Ha</a>', '<a href="http://example.org/">Ha</a>'),
+            ('<a href="http://example.org/">Ha</a>',
+             '<a href="http://example.org/">Ha</a>'),
             ('<a href="sms:+1234567890">Ha</a>', '<a>Ha</a>'),
             ('<p style="visibility: hidden;">Test</p>', '<p>Test</p>'),
             ('<script>alert("Onoe")</script>', 'alert("Onoe")')]

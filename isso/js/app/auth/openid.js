@@ -61,7 +61,7 @@ define(["app/dom", "app/config", "app/api", "app/jade", "app/i18n"], function($,
         } else {
             $(".auth-loggedin-openid", el).hide();
             $(".login-link-openid", el).showInline();
-            $(".login-link-openid > img", el).setAttribute("src", api.endpoint + "/images/openid-icon-32x32.png");
+            $(".login-link-openid > img", el).setAttribute("src", api.endpoint + "/img/openid-icon-32x32.png");
         }
     }
 
@@ -87,7 +87,7 @@ define(["app/dom", "app/config", "app/api", "app/jade", "app/i18n"], function($,
                 + "<link rel=\"stylesheet\" type=\"text/css\" href=\"" + api.endpoint + "/css/isso.css\">";
             win.document.body.setAttribute("class", "isso-openid-popup");
             win.document.body.innerHTML = jade.render("openid-identifier", {});
-            win.document.getElementById("isso-openid-logo").setAttribute("src", api.endpoint + "/images/openid-icon-32x32.png");
+            win.document.getElementById("isso-openid-logo").setAttribute("src", api.endpoint + "/img/openid-icon-32x32.png");
             win.document.getElementById("isso-openid-login-form").setAttribute("action", api.endpoint + "/openid/login");
         });
     }

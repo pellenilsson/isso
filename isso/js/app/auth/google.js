@@ -85,7 +85,7 @@ define(["app/dom", "app/config", "app/api"], function($, config, api) {
         } else {
             $(".auth-loggedin-google", el).hide();
             $(".login-link-google", el).showInline();
-            $(".login-link-google > img", el).setAttribute("src", api.endpoint + "/images/googleplus-color.png");
+            $(".login-link-google > img", el).setAttribute("src", api.endpoint + "/img/googleplus-color.png");
         }
     }
 

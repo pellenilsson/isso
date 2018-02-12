@@ -8,8 +8,14 @@ include isso/js/embed.dev.js
 include isso/js/count.min.js
 include isso/js/count.dev.js
 
-include isso/images/facebook-color.png
-include isso/images/googleplus-color.png
-include isso/images/openid-icon-32x32.png
+include isso/img/facebook-color.png
+include isso/img/googleplus-color.png
+include isso/img/openid-icon-32x32.png
 
 include isso/defaults.ini
+
+include isso/templates/admin.html
+include isso/templates/login.html
+include isso/css/admin.css
+include isso/css/isso.css
+include isso/img/isso.svg

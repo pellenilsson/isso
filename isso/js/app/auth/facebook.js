@@ -92,7 +92,7 @@ define(["app/dom", "app/config", "app/api"], function($, config, api) {
         } else {
             $(".auth-loggedin-facebook", el).hide();
             $(".login-link-facebook", el).showInline();
-            $(".login-link-facebook > img", el).setAttribute("src", api.endpoint + "/images/facebook-color.png");
+            $(".login-link-facebook > img", el).setAttribute("src", api.endpoint + "/img/facebook-color.png");
         }
     }
 
