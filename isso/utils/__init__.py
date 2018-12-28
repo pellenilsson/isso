@@ -5,12 +5,16 @@ from __future__ import division, unicode_literals
 import pkg_resources
 werkzeug = pkg_resources.get_distribution("werkzeug")
 
-import json
 import hashlib
+import json
+import os
 
+from datetime import datetime
+from jinja2 import Environment, FileSystemLoader
 from werkzeug.wrappers import Response
 from werkzeug.exceptions import BadRequest
 
+from isso.compat import text_type
 from isso.wsgi import Request
 
 try:
@@ -25,6 +29,8 @@ def anonymize(remote_addr):
     and /48 (zero'd).
 
     """
+    if not isinstance(remote_addr, text_type) and isinstance(remote_addr, str):
+        remote_addr = remote_addr.decode('ascii', 'ignore')
     try:
         ipv4 = ipaddress.IPv4Address(remote_addr)
         return u''.join(ipv4.exploded.rsplit('.', 1)[0]) + '.' + '0'
@@ -32,8 +38,8 @@ def anonymize(remote_addr):
         try:
             ipv6 = ipaddress.IPv6Address(remote_addr)
             if ipv6.ipv4_mapped is not None:
-                return anonymize(ipv6.ipv4_mapped)
-            return u'' + ipv6.exploded.rsplit(':', 5)[0] + ':' + ':'.join(['0000']*5)
+                return anonymize(text_type(ipv6.ipv4_mapped))
+            return u'' + ipv6.exploded.rsplit(':', 5)[0] + ':' + ':'.join(['0000'] * 5)
         except ipaddress.AddressValueError:
             return u'0.0.0.0'
 
@@ -86,11 +92,11 @@ class Bloomfilter:
 
     def add(self, key):
         for i in self.get_probes(key):
-            self.array[i//8] |= 2 ** (i%8)
+            self.array[i // 8] |= 2 ** (i % 8)
         self.elements += 1
 
     def __contains__(self, key):
-        return all(self.array[i//8] & (2 ** (i%8)) for i in self.get_probes(key))
+        return all(self.array[i // 8] & (2 ** (i % 8)) for i in self.get_probes(key))
 
     def __len__(self):
         return self.elements
@@ -109,9 +115,30 @@ class JSONRequest(Request):
             raise BadRequest('Unable to read JSON request')
 
 
+def render_template(template_name, **context):
+    template_path = os.path.join(os.path.dirname(__file__),
+                                 '..', 'templates')
+    jinja_env = Environment(loader=FileSystemLoader(template_path),
+                            autoescape=True)
+
+    def datetimeformat(value):
+        return datetime.fromtimestamp(value).strftime('%H:%M / %d-%m-%Y')
+
+    jinja_env.filters['datetimeformat'] = datetimeformat
+    t = jinja_env.get_template(template_name)
+    return Response(t.render(context), mimetype='text/html')
+
+
 class JSONResponse(Response):
 
     def __init__(self, obj, *args, **kwargs):
         kwargs["content_type"] = "application/json"
         super(JSONResponse, self).__init__(
             json.dumps(obj).encode("utf-8"), *args, **kwargs)
+
+
+class XMLResponse(Response):
+    def __init__(self, obj, *args, **kwargs):
+        kwargs["content_type"] = "text/xml"
+        super(XMLResponse, self).__init__(
+            obj, *args, **kwargs)

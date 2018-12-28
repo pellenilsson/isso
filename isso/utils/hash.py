@@ -15,8 +15,8 @@ except ImportError:
 
         def pbkdf2(val, salt, iterations, dklen, func):
             return _pbkdf2(val, salt, iterations, dklen, ("hmac-" + func).encode("utf-8"))
-    except ImportError as ex:
-        raise ImportError("No PBKDF2 implementation found. Either upgrade " +
+    except ImportError:
+        raise ImportError("No PBKDF2 implementation found. Either upgrade "
                           "to `werkzeug` 0.9 or install `passlib`.")
 
 
@@ -73,7 +73,7 @@ class Hash(object):
 
 
 class PBKDF2(Hash):
-    
+
     def __init__(self, salt=None, iterations=1000, dklen=6, func="sha1"):
         super(PBKDF2, self).__init__(salt)
 
@@ -110,3 +110,4 @@ def new(conf):
 
 
 sha1 = Hash(func="sha1").uhash
+md5 = Hash(func="md5").uhash

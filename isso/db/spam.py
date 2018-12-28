@@ -50,7 +50,7 @@ class Guard:
                 return False, "%i direct responses to %s" % (len(rv), uri)
 
         # block replies to self unless :param:`reply-to-self` is enabled
-        elif self.conf.getboolean("reply-to-self") == False:
+        elif self.conf.getboolean("reply-to-self") is False:
             rv = self.db.execute([
                 'SELECT id FROM comments WHERE'
                 '    remote_addr = ?',
@@ -65,6 +65,10 @@ class Guard:
         # require email if :param:`require-email` is enabled
         if self.conf.getboolean("require-email") and not comment.get("email"):
             return False, "email address required but not provided"
+
+        # require author if :param:`require-author` is enabled
+        if self.conf.getboolean("require-author") and not comment.get("author"):
+            return False, "author address required but not provided"
 
         return True, ""
 

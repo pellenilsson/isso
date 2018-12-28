@@ -10,7 +10,7 @@ Debian/Ubuntu, Gentoo, Archlinux or Fedora, you can use
     :local:
     :depth: 1
 
- .. _install-interludium:
+.. _install-interludium:
 
 Interludium: Python is not PHP
 ------------------------------
@@ -39,10 +39,10 @@ package manager.
 .. code-block:: sh
 
     # for Debian/Ubuntu
-    ~> sudo apt-get install python-setuptools python-virtualenv
+    ~> sudo apt-get install python-setuptools python-virtualenv python-dev
 
     # Fedora/Red Hat
-    ~> sudo yum install python-setuptools python-virtualenv
+    ~> sudo yum install python-setuptools python-virtualenv python-devel
 
 The next steps should be done as regular user, not as root (although possible
 but not recommended):
@@ -79,7 +79,7 @@ Install from PyPi
 Requirements
 ^^^^^^^^^^^^
 
-- Python 2.6, 2.7 or 3.3+ (+ devel headers)
+- Python 2.7 or 3.4+ (+ devel headers)
 - SQLite 3.3.8 or later
 - a working C compiler
 
@@ -149,7 +149,18 @@ Prebuilt Packages
 * Fedora: https://copr.fedoraproject.org/coprs/jujens/isso/ — copr
   repository. Built from Pypi, includes a systemctl unit script.
 
-* Docker Image: https://registry.hub.docker.com/u/bl4n/isso/
+Build a Docker image
+--------------------
+
+You can get a Docker image by running ``docker build . -t
+isso``. Assuming you have your configuration in ``/opt/isso``, you can
+use the following command to spawn the Docker container:
+
+.. code-block:: sh
+
+    ~> docker run -d --rm --name isso -p 127.0.0.1:8080:8080 -v /opt/isso:/config -v /opt/isso:/db isso
+
+Then, you can use a reverse proxy to expose port 8080.
 
 Install from Source
 -------------------
@@ -157,7 +168,7 @@ Install from Source
 If you want to hack on Isso or track down issues, there's an alternate
 way to set up Isso. It requires a lot more dependencies and effort:
 
-- Python 2.6, 2.7 or 3.3+ (+ devel headers)
+- Python 2.7 or 3.4+ (+ devel headers)
 - Virtualenv
 - SQLite 3.3.8 or later
 - a working C compiler
@@ -216,6 +227,7 @@ don't use FastCGi or uWSGI:
 -  systemd (Isso + Gunicorn): https://github.com/jgraichen/debian-isso/blob/master/debian/isso.service
 -  SysVinit (Isso + Gunicorn): https://github.com/jgraichen/debian-isso/blob/master/debian/isso.init
 -  OpenBSD: https://gist.github.com/noqqe/7397719
+-  FreeBSD: https://gist.github.com/ckoepp/52f6f0262de04cee1b88ef4a441e276d
 -  Supervisor: https://github.com/posativ/isso/issues/47
 
 If you're writing your own init script, you can utilize ``start-stop-daemon``

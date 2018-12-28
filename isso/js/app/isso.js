@@ -11,7 +11,8 @@ define(["app/dom", "app/utils", "app/config", "app/api", "app/jade", "app/i18n",
             el = $.htmlify(jade.render("postbox", {
             "author":  JSON.parse(localStorage.getItem("author")),
             "email":   JSON.parse(localStorage.getItem("email")),
-            "website": JSON.parse(localStorage.getItem("website"))
+            "website": JSON.parse(localStorage.getItem("website")),
+            "preview": ''
         }));
 
         // callback on success (e.g. to toggle the reply button)
@@ -30,18 +31,59 @@ define(["app/dom", "app/utils", "app/config", "app/api", "app/jade", "app/i18n",
               $("[name='email']", this).focus();
               return false;
             }
+            if (config["require-author"] &&
+                $("[name='author']", this).value.length <= 0)
+            {
+              $("[name='author']", this).focus();
+              return false;
+            }
             return true;
         };
 
+        // only display notification checkbox if email is filled in
+        var email_edit = function() {
+            if (config["reply-notifications"] && $("[name='email']", el).value.length > 0) {
+                $(".notification-section", el).show();
+            } else {
+                $(".notification-section", el).hide();
+            }
+        };
+        $("[name='email']", el).on("input", email_edit);
+        email_edit();
+
         // email is not optional if this config parameter is set
         if (config["require-email"]) {
-          $("[name='email']", el).placeholder =
-            $("[name='email']", el).placeholder.replace(/ \(.*\)/, "");
+            $("[name='email']", el).setAttribute("placeholder",
+                $("[name='email']", el).getAttribute("placeholder").replace(/ \(.*\)/, ""));
         }
+
+        // author is not optional if this config parameter is set
+        if (config["require-author"]) {
+          $("[name='author']", el).placeholder =
+            $("[name='author']", el).placeholder.replace(/ \(.*\)/, "");
+        }
+
+        // preview function
+        $("[name='preview']", el).on("click", function() {
+            api.preview(utils.text($(".textarea", el).innerHTML)).then(
+                function(html) {
+                    $(".preview .text", el).innerHTML = html;
+                    el.classList.add('preview-mode');
+                });
+        });
+
+        // edit function
+        var edit = function() {
+            $(".preview .text", el).innerHTML = '';
+            el.classList.remove('preview-mode');
+        };
+        $("[name='edit']", el).on("click", edit);
+        $(".preview", el).on("click", edit);
 
         // submit form, initialize optional fields with `null` and reset form.
         // If replied to a comment, remove form completely.
         $("[type=submit]", el).on("click", function() {
+            edit();
             if (! el.validate()) {
                 return;
             }
@@ -57,7 +99,9 @@ define(["app/dom", "app/utils", "app/config", "app/api", "app/jade", "app/i18n",
             api.create($("#isso-thread").getAttribute("data-isso-id"), {
                 author: author, email: email, website: website,
                 text: utils.text($(".textarea", el).innerHTML),
-                parent: parent || null
+                parent: parent || null,
+                title: $("#isso-thread").getAttribute("data-title") || null,
+                notification: $("[name=notification]", el).checked() ? 1 : 0,
             }).then(function(comment) {
                 $(".textarea", el).innerHTML = "";
                 $(".textarea", el).blur();
@@ -165,18 +209,34 @@ define(["app/dom", "app/utils", "app/config", "app/api", "app/jade", "app/i18n",
         );
 
         if (config.vote) {
-            // update vote counter, but hide if votes sum to 0
+            var voteLevels = config['vote-levels'];
+            if (typeof voteLevels === 'string') {
+                // Eg. -5,5,15
+                voteLevels = voteLevels.split(',');
+            }
+            
+            // update vote counter
             var votes = function (value) {
                 var span = $("span.votes", footer);
                 if (span === null) {
-                    if (value !== 0) {
-                        footer.prepend($.new("span.votes", value));
-                    }
+                    footer.prepend($.new("span.votes", value));
                 } else {
-                    if (value === 0) {
-                        span.remove();
-                    } else {
-                        span.textContent = value;
+                    span.textContent = value;
+                }
+                if (value) {
+                    el.classList.remove('isso-no-votes');
+                } else {
+                    el.classList.add('isso-no-votes');
+                }
+                if (voteLevels) {
+                    var before = true;
+                    for (var index = 0; index <= voteLevels.length; index++) {
+                        if (before && (index >= voteLevels.length || value < voteLevels[index])) {
+                            el.classList.add('isso-vote-level-' + index);
+                            before = false;
+                        } else {
+                            el.classList.remove('isso-vote-level-' + index);
+                        }
                     }
                 }
             };
@@ -192,12 +252,14 @@ define(["app/dom", "app/utils", "app/config", "app/api", "app/jade", "app/i18n",
                     votes(rv.likes - rv.dislikes);
                 });
             });
+            
+            votes(comment.likes - comment.dislikes);
         }
 
         $("a.edit", footer).toggle("click",
             function(toggler) {
                 var edit = $("a.edit", footer);
-                var avatar = config["avatar"] ? $(".avatar", el, false)[0] : null;
+                var avatar = config["avatar"] || config["gravatar"] ? $(".avatar", el, false)[0] : null;
 
                 edit.textContent = i18n.translate("comment-save");
                 edit.insertAfter($.new("a.cancel", i18n.translate("comment-cancel"))).on("click", function() {
@@ -225,7 +287,7 @@ define(["app/dom", "app/utils", "app/config", "app/api", "app/jade", "app/i18n",
             },
             function(toggler) {
                 var textarea = $(".textarea", text);
-                var avatar = config["avatar"] ? $(".avatar", el, false)[0] : null;
+                var avatar = config["avatar"] || config["gravatar"] ? $(".avatar", el, false)[0] : null;
 
                 if (! toggler.canceled && textarea !== null) {
                     if (utils.text(textarea.innerHTML).length < 3) {

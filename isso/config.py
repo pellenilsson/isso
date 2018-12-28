@@ -17,11 +17,6 @@ from isso.compat import text_type as str
 logger = logging.getLogger("isso")
 
 
-# Python 2.6 compatibility
-def total_seconds(td):
-    return (td.microseconds + (td.seconds + td.days * 24 * 3600) * 10**6) / 10**6
-
-
 def timedelta(string):
     """
     Parse :param string: into :class:`datetime.timedelta`, you can use any
@@ -43,7 +38,7 @@ def timedelta(string):
     """
 
     keys = ["weeks", "days", "hours", "minutes", "seconds"]
-    regex = "".join(["((?P<%s>\d+)%s ?)?" % (k, k[0]) for k in keys])
+    regex = "".join(["((?P<%s>\\d+)%s ?)?" % (k, k[0]) for k in keys])
     kwargs = {}
     for k, v in re.match(regex, string).groupdict(default="0").items():
         kwargs[k] = int(v)
@@ -101,7 +96,7 @@ class IssoParser(ConfigParser):
             try:
                 return int(delta.total_seconds())
             except AttributeError:
-                return int(total_seconds(delta))
+                return int(delta.total_seconds())
 
     def getlist(self, section, key):
         return list(map(str.strip, self.get(section, key).split(',')))
@@ -128,8 +123,8 @@ def new(options=None):
 def load(default, user=None):
 
     # return set of (section, option)
-    setify = lambda cp: set((section, option) for section in cp.sections()
-                            for option in cp.options(section))
+    def setify(cp): return set((section, option) for section in cp.sections()
+                               for option in cp.options(section))
 
     parser = new()
     parser.read(default)

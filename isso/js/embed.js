@@ -12,10 +12,16 @@ require(["app/lib/ready", "app/config", "app/i18n", "app/api", "app/isso", "app/
     jade.set("pluralize", i18n.pluralize);
     jade.set("svg", svg);
 
-    domready(function() {
+    var isso_thread;
+    var heading;
 
-        if (config["css"]) {
+    function init() {
+        isso_thread = $('#isso-thread');
+        heading = $.new("h4");
+
+        if (config["css"] && $("style#isso-style") === null) {
             var style = $.new("style");
+            style.id = "isso-style";
             style.type = "text/css";
             style.textContent = css.inline;
             $("head").append(style);
@@ -23,15 +29,28 @@ require(["app/lib/ready", "app/config", "app/i18n", "app/api", "app/isso", "app/
 
         count();
 
-        if ($("#isso-thread") === null) {
+        if (isso_thread === null) {
             return console.log("abort, #isso-thread is missing");
         }
 
+        if (config["feed"]) {
+            var feedLink = $.new('a', i18n.translate('atom-feed'));
+            var feedLinkWrapper = $.new('span.isso-feedlink');
+            feedLink.href = api.feed(isso_thread.getAttribute("data-isso-id"));
+            feedLinkWrapper.appendChild(feedLink);
+            isso_thread.append(feedLinkWrapper);
+        }
+        isso_thread.append(heading);
+        isso_thread.append(new isso.Postbox(null));
+        isso_thread.append('<div id="isso-root"></div>');
+    }
 
-        api.fetch($("#isso-thread").getAttribute("data-isso-id"),
+    function fetchComments() {
+        $('#isso-root').textContent = '';
+        api.fetch(isso_thread.getAttribute("data-isso-id") || location.pathname,
             config["max-comments-top"],
             config["max-comments-nested"]).then(
-            function(rv) {
+            function (rv) {
                 for (var setting in rv.config) {
                     config[setting] = rv.config[setting]
                 }
@@ -41,7 +60,7 @@ require(["app/lib/ready", "app/config", "app/i18n", "app/api", "app/isso", "app/
                 $("#isso-thread").append('<div id="isso-root"></div>');
 
                 if (rv.total_replies === 0) {
-                    $("#isso-thread > h4").textContent = i18n.translate("no-comments");
+                    heading.textContent = i18n.translate("no-comments");
                     return;
                 }
 
@@ -49,18 +68,19 @@ require(["app/lib/ready", "app/config", "app/i18n", "app/api", "app/isso", "app/
                 var count = rv.total_replies;
                 rv.replies.forEach(function(comment) {
                     isso.insert(comment, false);
-                    if(comment.created > lastcreated) {
+                    if (comment.created > lastcreated) {
                         lastcreated = comment.created;
                     }
                     count = count + comment.total_replies;
                 });
-                $("#isso-thread > h4").textContent = i18n.pluralize("num-comments", count);
+                heading.textContent = i18n.pluralize("num-comments", count);
 
-                if(rv.hidden_replies > 0) {
+                if (rv.hidden_replies > 0) {
                     isso.insert_loader(rv, lastcreated);
                 }
 
-                if (window.location.hash.length > 0) {
+                if (window.location.hash.length > 0 &&
+                    window.location.hash.match("^#isso-[0-9]+$")) {
                     $(window.location.hash).scrollIntoView();
                 }
             },
@@ -68,5 +88,16 @@ require(["app/lib/ready", "app/config", "app/i18n", "app/api", "app/isso", "app/
                 console.log(err);
             }
         );
+    }
+
+    domready(function() {
+        init();
+        fetchComments();
     });
+
+    window.Isso = {
+        init: init,
+        fetchComments: fetchComments
+    };
+
 });
