@@ -187,7 +187,7 @@ class API(object):
         with http.curl('GET', API.GOOGLE_CERT_URL, timeout=5) as resp:
             try:
                 assert resp and resp.getcode() == 200
-                pems = json.loads(resp.read())
+                pems = json.loads(resp.read().decode("utf-8"))
                 API.google_certs = {key: load_pem_x509_certificate(pems[key].encode("ascii"), default_backend()) for key in pems}
             except (AssertionError, ValueError):
                 logger.warn("failed to renew Google certificates")
@@ -195,7 +195,7 @@ class API(object):
     @classmethod
     def validate_jwt(cls, token, certificates, audience, issuers):
         for cert in certificates.values():
-            pubkey = cert.public_key().public_bytes(serialization.Encoding.PEM, serialization.PublicFormat.SubjectPublicKeyInfo)
+            pubkey = cert.public_key().public_bytes(serialization.Encoding.PEM, serialization.PublicFormat.SubjectPublicKeyInfo).decode("utf-8")
             for iss in issuers:
                 try:
                     return jwt.decode(token, pubkey, audience=audience, issuer=iss, options={'verify_at_hash': False})

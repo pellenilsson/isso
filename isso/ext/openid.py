@@ -78,7 +78,7 @@ class OpenID(object):
             assert wf_host
             with http.curl("GET", "https://%s/.well-known/webfinger?%s" % (wf_host, urlencode(params))) as resp:
                 assert resp and resp.getcode() == 200
-                ans = json.loads(resp.read())
+                ans = json.loads(resp.read().decode("utf-8"))
                 for link in ans['links']:
                     if link['rel'] == "http://openid.net/specs/connect/1.0/issuer":
                         session['issuer'] = link['href']
@@ -94,7 +94,7 @@ class OpenID(object):
         try:
             with http.curl("GET", session['issuer'].rstrip("/") + "/.well-known/openid-configuration") as resp:
                 assert resp and resp.getcode() == 200
-                ans = json.loads(resp.read())
+                ans = json.loads(resp.read().decode("utf-8"))
                 assert ans['issuer'] == session['issuer']
                 session['registration_endpoint'] = ans['registration_endpoint']
                 session['userinfo_endpoint'] = ans['userinfo_endpoint']
@@ -117,7 +117,7 @@ class OpenID(object):
             with http.curl("POST", session['registration_endpoint'], body=json.dumps(reg_data), extra_headers=headers) as resp:
                 # HTTP status should be 201 on success, but is returned as 200 from some implementations
                 assert resp and 200 <= resp.getcode() < 300
-                ans = json.loads(resp.read())
+                ans = json.loads(resp.read().decode("utf-8"))
                 session['client_id'] = ans['client_id']
                 session['client_secret'] = ans['client_secret']
         except (AssertionError, ValueError, KeyError):
@@ -136,13 +136,13 @@ class OpenID(object):
         auth_string = "%s:%s" % (session['client_id'], session['client_secret'])
         headers = {
             'Content-Type': "application/x-www-form-urlencoded",
-            'Authorization': "Basic %s" % (base64.b64encode((auth_string.encode("ascii")).decode("ascii"))),
+            'Authorization': "Basic %s" % (base64.b64encode(auth_string.encode("ascii")).decode("ascii")),
         }
         token_url = "%s/oauth/token" % (session['issuer'])
         try:
             with http.curl("POST", token_url, urlencode(params), extra_headers=headers) as resp:
                 assert resp and resp.getcode() == 200
-                ans = json.loads(resp.read())
+                ans = json.loads(resp.read().decode("utf-8"))
                 session['access_token'] = ans['access_token']
         except (AssertionError, ValueError, KeyError):
            return False
@@ -158,7 +158,7 @@ class OpenID(object):
         try:
             with http.curl("GET", session['userinfo_endpoint'], extra_headers=headers) as resp:
                 assert resp and resp.getcode() == 200
-                session['userinfo'] = json.loads(resp.read())
+                session['userinfo'] = json.loads(resp.read().decode("utf-8"))
         except (AssertionError, ValueError):
             return False
 
