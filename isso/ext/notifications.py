@@ -90,36 +90,35 @@ class SMTP(object):
 
     def format(self, thread, comment):
 
-        rv = io.StringIO()
+        rv = []
 
         author = comment["author"] or "Anonymous"
         if comment["email"]:
             author += " <%s>" % comment["email"]
 
-        rv.write(author + " wrote:\n")
-        rv.write("\n")
-        rv.write(comment["text"] + "\n")
-        rv.write("\n")
+        rv.append(author + " wrote:\n")
+        rv.append("\n")
+        rv.append(comment["text"] + "\n")
+        rv.append("\n")
 
         if comment["website"]:
-            rv.write("User's URL: %s\n" % comment["website"])
+            rv.append("User's URL: %s\n" % comment["website"])
 
-        rv.write("IP address: %s\n" % comment["remote_addr"])
-        rv.write("Link to comment: %s\n" %
+        rv.append("IP address: %s\n" % comment["remote_addr"])
+        rv.append("Link to comment: %s\n" %
                  (local("origin") + thread["uri"] + "#isso-%i" % comment["id"]))
-        rv.write("\n")
+        rv.append("\n")
 
         uri = local("host") + "/id/%i" % comment["id"]
         key = self.isso.sign(comment["id"])
 
-        rv.write("---\n")
-        rv.write("Delete comment: %s\n" % (uri + "/delete/" + key))
+        rv.append("---\n")
+        rv.append("Delete comment: %s\n" % (uri + "/delete/" + key))
 
         if comment["mode"] == 2:
-            rv.write("Activate comment: %s\n" % (uri + "/activate/" + key))
+            rv.append("Activate comment: %s\n" % (uri + "/activate/" + key))
 
-        rv.seek(0)
-        return rv.read()
+        return "".join(rv)
 
     def notify(self, thread, comment):
 
