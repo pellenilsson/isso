@@ -3,7 +3,6 @@
 from __future__ import unicode_literals
 
 import re
-import cgi
 import time
 import functools
 import logging
@@ -34,6 +33,11 @@ from isso.utils import (http, parse, JSONResponse as JSON,
                         render_template)
 from isso.views import requires
 from isso.utils.hash import sha1
+
+try:
+    from cgi import escape
+except ImportError:
+    from html import escape
 
 logger = logging.getLogger("isso")
 
@@ -408,7 +412,7 @@ class API(object):
 
         for field in ("author", "email", "website"):
             if data.get(field) is not None:
-                data[field] = cgi.escape(data[field])
+                data[field] = escape(data[field], quote=False)
 
         if data.get("website"):
             data["website"] = normalize(data["website"])
