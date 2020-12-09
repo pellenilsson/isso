@@ -6,7 +6,7 @@ import sys
 from setuptools import setup, find_packages
 
 requires = ['html5lib==0.9999999', 'itsdangerous', 'Jinja2',
-            'misaka>=1.0,<2.0', 'werkzeug>=0.9',
+            'misaka>=1.0,<2.0', 'werkzeug>=0.9,<1.0.0',
             'cryptography', 'python-jose']
 
 if sys.version_info < (2, 7):
